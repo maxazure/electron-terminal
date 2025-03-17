@@ -101,13 +101,15 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .auto-refresh {
+    .auto-refresh, .plain-text {
       display: flex;
       align-items: center;
       gap: 5px;
+      margin-left: 10px;
     }
-    .auto-refresh input {
+    .auto-refresh input, .plain-text input {
       width: auto;
     }
     .lines-input {
@@ -116,6 +118,11 @@
     }
     .lines-control {
       display: flex;
+      align-items: center;
+    }
+    .output-options {
+      display: flex;
+      margin-top: 10px;
       align-items: center;
     }
   </style>
@@ -132,9 +139,15 @@
           <input type="number" id="lines-input" class="lines-input" value="20" min="1">
           <button id="refresh-output">刷新输出</button>
         </div>
-        <div class="auto-refresh">
-          <input type="checkbox" id="auto-refresh" checked>
-          <label for="auto-refresh">自动刷新 (2秒)</label>
+        <div class="output-options">
+          <div class="plain-text">
+            <input type="checkbox" id="plain-text" checked>
+            <label for="plain-text">纯文本模式</label>
+          </div>
+          <div class="auto-refresh">
+            <input type="checkbox" id="auto-refresh" checked>
+            <label for="auto-refresh">自动刷新 (2秒)</label>
+          </div>
         </div>
       </div>
       <div id="terminal-output" class="terminal-output"></div>
@@ -178,6 +191,7 @@
     const sendCommandBtn = document.getElementById('send-command');
     const refreshOutputBtn = document.getElementById('refresh-output');
     const linesInput = document.getElementById('lines-input');
+    const plainTextCheckbox = document.getElementById('plain-text');
     const autoRefreshCheckbox = document.getElementById('auto-refresh');
     const controlButtons = document.querySelectorAll('.control-buttons button');
     const statusEl = document.getElementById('status');
@@ -187,9 +201,12 @@
       try {
         // 从输入框获取行数
         const lines = parseInt(linesInput.value) || 20;
+        // 是否使用纯文本模式
+        const plainText = plainTextCheckbox.checked;
         
-        // 将行数作为参数传递给API
-        const response = await fetch(`${API_BASE_URL}/output?lines=${lines}`);
+        // 将行数和纯文本参数传递给API
+        const url = `${API_BASE_URL}/output?lines=${lines}${plainText ? '&plain=true' : ''}`;
+        const response = await fetch(url);
         const data = await response.json();
         
         if (data && data.lines) {
@@ -271,10 +288,10 @@
     
     // 设置自动刷新
     function setupAutoRefresh() {
+      clearInterval(autoRefreshInterval); // 清除之前的定时器
+      
       if (autoRefreshCheckbox.checked) {
         autoRefreshInterval = setInterval(fetchTerminalOutput, 2000);
-      } else {
-        clearInterval(autoRefreshInterval);
       }
     }
     
@@ -292,6 +309,9 @@
     
     // 监听行数输入框变化
     linesInput.addEventListener('change', fetchTerminalOutput);
+    
+    // 切换纯文本模式
+    plainTextCheckbox.addEventListener('change', fetchTerminalOutput);
     
     autoRefreshCheckbox.addEventListener('change', setupAutoRefresh);
     

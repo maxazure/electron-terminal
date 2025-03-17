@@ -22,6 +22,26 @@ class TerminalApiServer {
     this.setupRoutes();
   }
   
+  // 清除ANSI转义序列
+  stripAnsiCodes(text) {
+    // 移除ANSI转义序列的正则表达式
+    // 这会移除颜色代码、光标移动、清屏等控制字符
+    return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
+               .replace(/\x07/g, '') // 移除响铃字符 (BEL)
+               .replace(/\r/g, '')   // 移除回车符
+               .replace(/\u001b[^m]*?m/g, '') // 移除颜色代码
+               .replace(/\u001b\][^\u0007]*?\u0007/g, ''); // 移除操作系统命令
+  }
+  
+  // 处理屏幕输出文本
+  processOutputText(text, stripAnsi) {
+    // 如果需要清除ANSI序列
+    if (stripAnsi) {
+      return this.stripAnsiCodes(text);
+    }
+    return text;
+  }
+  
   // 设置API路由
   setupRoutes() {
     // 健康检查
@@ -37,12 +57,20 @@ class TerminalApiServer {
         lines = this.defaultOutputLines;
       }
       
+      // 是否清除ANSI转义序列
+      const stripAnsi = req.query.plain === 'true';
+      
       // 获取最后N行数据
-      const outputLines = this.outputBuffer.slice(-lines);
+      const rawOutputLines = this.outputBuffer.slice(-lines);
+      
+      // 处理每一行，可选择清除ANSI序列
+      const processedOutputLines = rawOutputLines.map(line => 
+        this.processOutputText(line, stripAnsi)
+      ).filter(line => line.trim() !== ''); // 过滤掉空行
       
       // 返回数组形式的输出，每个元素是一行
       res.json({ 
-        lines: outputLines
+        lines: processedOutputLines
       });
     });
     
