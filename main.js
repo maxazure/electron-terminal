@@ -2,11 +2,14 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const os = require('os');
 const pty = require('node-pty');
 const path = require('path');
+const TerminalApiServer = require('./api-server');
 
 // 保存主窗口的引用以防止被垃圾回收
 let mainWindow;
 // 保存pty进程的引用
 let ptyProcess;
+// API服务器实例
+const apiServer = new TerminalApiServer();
 
 // 创建主窗口
 function createWindow() {
@@ -34,8 +37,15 @@ function createWindow() {
     env: process.env
   });
 
+  // 将pty进程传给API服务器
+  apiServer.setTerminal(ptyProcess);
+
   // 监听终端输出并发送到渲染进程
   ptyProcess.onData(data => {
+    // 将输出添加到API缓冲区
+    apiServer.addOutput(data);
+    
+    // 发送到渲染进程
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('terminal-output', data);
     }
@@ -52,10 +62,27 @@ function createWindow() {
 }
 
 // 当Electron完成初始化并准备创建浏览器窗口时调用此方法
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  // 启动API服务器
+  try {
+    await apiServer.start();
+    console.log('API server started successfully');
+  } catch (error) {
+    console.error('Failed to start API server:', error);
+  }
+  
+  createWindow();
+});
 
 // 关闭所有窗口时退出应用，在macOS上除外
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  // 停止API服务器
+  try {
+    await apiServer.stop();
+  } catch (error) {
+    console.error('Error stopping API server:', error);
+  }
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }

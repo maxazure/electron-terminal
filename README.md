@@ -9,12 +9,14 @@
 - 响应式设计，自动适应窗口大小变化
 - 自定义主题和字体设置
 - 简洁的工具栏界面
+- RESTful API接口，支持远程控制终端
 
 ## 技术栈
 
 - Electron: 跨平台桌面应用框架
 - node-pty: Node.js的伪终端实现
 - xterm.js: 强大的终端前端组件
+- Express: 提供RESTful API服务
 - JavaScript/HTML/CSS: 用户界面实现
 
 ## 开发指南
@@ -61,9 +63,78 @@ npm run build
 ```
 electron-terminal/
 ├── main.js          # Electron主进程
+├── api-server.js    # RESTful API服务器
 ├── index.html       # 渲染进程HTML
 ├── package.json     # 项目配置
 └── node_modules/    # 依赖库
+```
+
+## API文档
+
+应用启动后会在本地端口3000上提供RESTful API接口，可用于远程控制终端。
+
+### 端点
+
+#### 获取终端输出
+
+```
+GET /api/output
+```
+
+查询参数:
+- `lines`: (可选) 要获取的最大行数，默认为缓冲区大小(1000)
+
+响应:
+```json
+{
+  "output": "完整的终端输出文本",
+  "lines": ["按行分割的输出数组"]
+}
+```
+
+#### 发送终端输入
+
+```
+POST /api/input
+```
+
+请求体:
+```json
+{
+  "text": "要发送的文本",
+  "control": "控制字符 (可选，例如 'c' 表示 Ctrl+C)"
+}
+```
+
+响应:
+```json
+{
+  "success": true
+}
+```
+
+### 使用示例
+
+#### 使用curl发送命令并获取输出
+
+```bash
+# 发送命令
+curl -X POST -H "Content-Type: application/json" -d '{"text":"ls -la\n"}' http://localhost:3000/api/input
+
+# 获取输出
+curl http://localhost:3000/api/output
+```
+
+#### 发送Ctrl+C终止命令
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"control":"c"}' http://localhost:3000/api/input
+```
+
+#### 发送超长文本
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段文本内容...\nEOF\n"}' http://localhost:3000/api/input
 ```
 
 ## 未来计划
@@ -74,6 +145,8 @@ electron-terminal/
 - [ ] Shell配置集成
 - [ ] 命令自动补全
 - [ ] 搜索功能
+- [ ] API身份验证和安全措施
+- [ ] WebSocket支持实时终端输出
 
 ## 许可证
 
