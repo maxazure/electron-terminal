@@ -34,8 +34,8 @@
 
 ```bash
 # 克隆项目
-git clone <repository-url>
-cd electron-terminal
+git clone https://github.com/maxazure/termite.git
+cd termite
 
 # 安装依赖
 npm install
@@ -69,37 +69,10 @@ npm run build
    "postinstall": "electron-builder install-app-deps"
    ```
 
-正确的 package.json 配置示例：
-
-```json
-{
-  "name": "electron-terminal",
-  "version": "1.0.0",
-  "description": "Electron 终端模拟器",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "rebuild": "electron-rebuild",
-    "postinstall": "electron-builder install-app-deps",
-    "build": "electron-builder"
-  },
-  "devDependencies": {
-    "electron": "^22.0.0",
-    "electron-builder": "^24.13.3",
-    "electron-rebuild": "^3.2.9"
-  },
-  "dependencies": {
-    "express": "^4.17.1",
-    "node-pty": "^0.10.1",
-    "xterm": "^5.0.0"
-  }
-}
-```
-
 ## 项目结构
 
 ```
-electron-terminal/
+termite/
 ├── main.js          # Electron主进程
 ├── api-server.js    # RESTful API服务器
 ├── index.html       # 渲染进程HTML
@@ -112,6 +85,7 @@ electron-terminal/
 ## API文档
 
 应用启动后会在本地端口8999上提供RESTful API接口，可用于远程控制终端。
+可用于MCP Server 使用 claude desktop自动化控制终端。
 
 ### 端点
 
@@ -202,11 +176,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段
 - [ ] 支持多标签和分屏功能
 - [ ] 自定义主题编辑器
 - [ ] 配置持久化
-- [ ] Shell配置集成
-- [ ] 命令自动补全
-- [ ] 搜索功能
 - [ ] API身份验证和安全措施
-- [ ] WebSocket支持实时终端输出
 
 ## 许可证
 
