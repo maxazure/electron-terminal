@@ -65,6 +65,8 @@ electron-terminal/
 ├── main.js          # Electron主进程
 ├── api-server.js    # RESTful API服务器
 ├── index.html       # 渲染进程HTML
+├── demo-client.html # API演示客户端
+├── api-test.js      # API测试脚本
 ├── package.json     # 项目配置
 └── node_modules/    # 依赖库
 ```
@@ -136,6 +138,20 @@ curl -X POST -H "Content-Type: application/json" -d '{"control":"c"}' http://loc
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段文本内容...\nEOF\n"}' http://localhost:3000/api/input
 ```
+
+### Web演示客户端
+
+项目包含一个基于Web的演示客户端页面 `demo-client.html`，可以用来测试终端API功能。使用方法：
+
+1. 确保Electron Terminal应用正在运行
+2. 在浏览器中打开 `demo-client.html` 文件
+3. 通过Web界面发送命令和控制字符，并查看终端输出
+
+演示客户端提供以下功能：
+- 实时查看终端输出（支持自动刷新）
+- 发送命令，包括超长文本
+- 发送常用控制字符 (Ctrl+C, Ctrl+D等)
+- 查看命令执行状态
 
 ## 未来计划
 

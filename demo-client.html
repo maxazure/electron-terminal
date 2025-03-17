@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electron Terminal API Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .terminal-output {
+      background-color: #2e2e2e;
+      color: #f0f0f0;
+      font-family: Menlo, Monaco, 'Courier New', monospace;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-y: auto;
+      height: 400px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    textarea {
+      height: 120px;
+      font-family: Menlo, Monaco, 'Courier New', monospace;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .control-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .control-buttons button {
+      padding: 5px;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .refresh-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .auto-refresh input {
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Electron Terminal API Demo</h1>
+  
+  <div class="container">
+    <div class="panel">
+      <h2>Terminal Output</h2>
+      <div class="refresh-controls">
+        <button id="refresh-output">Refresh Output</button>
+        <div class="auto-refresh">
+          <input type="checkbox" id="auto-refresh" checked>
+          <label for="auto-refresh">Auto Refresh (2s)</label>
+        </div>
+      </div>
+      <div id="terminal-output" class="terminal-output"></div>
+    </div>
+    
+    <div class="panel">
+      <h2>Terminal Controls</h2>
+      
+      <div class="controls">
+        <div class="input-group">
+          <label for="command-input">Enter Command:</label>
+          <textarea id="command-input" placeholder="Type your command here..."></textarea>
+        </div>
+        
+        <button id="send-command">Send Command</button>
+        
+        <h3>Common Control Characters</h3>
+        <div class="control-buttons">
+          <button data-control="c">Ctrl+C</button>
+          <button data-control="d">Ctrl+D</button>
+          <button data-control="z">Ctrl+Z</button>
+          <button data-control="l">Ctrl+L</button>
+          <button data-control="a">Ctrl+A</button>
+          <button data-control="e">Ctrl+E</button>
+          <button data-control="k">Ctrl+K</button>
+          <button data-control="u">Ctrl+U</button>
+        </div>
+        
+        <div id="status" class="status" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:3000/api';
+    let autoRefreshInterval = null;
+    
+    // 获取DOM元素
+    const terminalOutput = document.getElementById('terminal-output');
+    const commandInput = document.getElementById('command-input');
+    const sendCommandBtn = document.getElementById('send-command');
+    const refreshOutputBtn = document.getElementById('refresh-output');
+    const autoRefreshCheckbox = document.getElementById('auto-refresh');
+    const controlButtons = document.querySelectorAll('.control-buttons button');
+    const statusEl = document.getElementById('status');
+    
+    // 获取终端输出
+    async function fetchTerminalOutput() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/output`);
+        const data = await response.json();
+        
+        if (data && data.output) {
+          terminalOutput.textContent = data.output;
+          // 自动滚动到底部
+          terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+      } catch (error) {
+        console.error('Error fetching output:', error);
+        showStatus('Error fetching terminal output', false);
+      }
+    }
+    
+    // 发送命令
+    async function sendCommand(text) {
+      if (!text || text.trim() === '') return;
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/input`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          showStatus('Command sent successfully', true);
+          commandInput.value = '';
+          // 立即刷新输出
+          setTimeout(fetchTerminalOutput, 500);
+        } else {
+          showStatus('Failed to send command', false);
+        }
+      } catch (error) {
+        console.error('Error sending command:', error);
+        showStatus('Error sending command', false);
+      }
+    }
+    
+    // 发送控制字符
+    async function sendControlChar(char) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/input`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ control: char })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          showStatus(`Sent Ctrl+${char.toUpperCase()} successfully`, true);
+          // 立即刷新输出
+          setTimeout(fetchTerminalOutput, 500);
+        } else {
+          showStatus('Failed to send control character', false);
+        }
+      } catch (error) {
+        console.error('Error sending control character:', error);
+        showStatus('Error sending control character', false);
+      }
+    }
+    
+    // 显示状态消息
+    function showStatus(message, isSuccess) {
+      statusEl.textContent = message;
+      statusEl.className = isSuccess ? 'status success' : 'status error';
+      statusEl.style.display = 'block';
+      
+      // 3秒后隐藏状态消息
+      setTimeout(() => {
+        statusEl.style.display = 'none';
+      }, 3000);
+    }
+    
+    // 设置自动刷新
+    function setupAutoRefresh() {
+      if (autoRefreshCheckbox.checked) {
+        autoRefreshInterval = setInterval(fetchTerminalOutput, 2000);
+      } else {
+        clearInterval(autoRefreshInterval);
+      }
+    }
+    
+    // 事件监听器
+    sendCommandBtn.addEventListener('click', () => {
+      // 自动添加回车符，除非已经有了
+      let command = commandInput.value;
+      if (command && !command.endsWith('\n')) {
+        command += '\n';
+      }
+      sendCommand(command);
+    });
+    
+    refreshOutputBtn.addEventListener('click', fetchTerminalOutput);
+    
+    autoRefreshCheckbox.addEventListener('change', setupAutoRefresh);
+    
+    // 按下Enter键发送命令（按住Shift可输入换行）
+    commandInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        let command = commandInput.value;
+        if (command && !command.endsWith('\n')) {
+          command += '\n';
+        }
+        sendCommand(command);
+      }
+    });
+    
+    // 设置控制字符按钮
+    controlButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const control = button.dataset.control;
+        if (control) {
+          sendControlChar(control);
+        }
+      });
+    });
+    
+    // 初始化
+    fetchTerminalOutput();
+    setupAutoRefresh();
+  </script>
+</body>
+</html>
