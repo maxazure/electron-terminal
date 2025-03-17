@@ -24,6 +24,8 @@ class TerminalApiServer {
   
   // 清除ANSI转义序列
   stripAnsiCodes(text) {
+    if (!text) return '';
+    
     // 移除ANSI转义序列的正则表达式
     // 这会移除颜色代码、光标移动、清屏等控制字符
     return text.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
@@ -35,6 +37,8 @@ class TerminalApiServer {
   
   // 处理屏幕输出文本
   processOutputText(text, stripAnsi) {
+    if (!text) return '';
+    
     // 如果需要清除ANSI序列
     if (stripAnsi) {
       return this.stripAnsiCodes(text);
@@ -113,6 +117,8 @@ class TerminalApiServer {
   
   // 添加终端输出到缓冲区
   addOutput(data) {
+    if (!data) return;
+    
     // 将输出按行分割并添加到缓冲区
     const lines = data.toString().split(/\r?\n/);
     
@@ -132,9 +138,26 @@ class TerminalApiServer {
   start() {
     return new Promise((resolve, reject) => {
       try {
+        // 检查服务器是否已经在运行
+        if (this.server) {
+          console.log('API server already running');
+          resolve();
+          return;
+        }
+        
         this.server = this.app.listen(this.port, () => {
           console.log(`Terminal API server running on port ${this.port}`);
           resolve();
+        });
+        
+        // 错误处理
+        this.server.on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            console.error(`Port ${this.port} is already in use. Please close other applications using this port.`);
+          } else {
+            console.error('API server error:', err);
+          }
+          reject(err);
         });
       } catch (error) {
         console.error('Failed to start API server:', error);
@@ -147,17 +170,19 @@ class TerminalApiServer {
   stop() {
     return new Promise((resolve, reject) => {
       if (this.server) {
-        this.server.close((err) => {
-          if (err) {
-            console.error('Error closing API server:', err);
-            reject(err);
-          } else {
+        try {
+          this.server.close(() => {
             console.log('API server stopped');
             this.server = null;
             resolve();
-          }
-        });
+          });
+        } catch (err) {
+          console.error('Error closing API server:', err);
+          this.server = null; // 重置服务器变量，即使出错
+          reject(err);
+        }
       } else {
+        // 如果服务器不存在，直接解析
         resolve();
       }
     });
