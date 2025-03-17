@@ -45,6 +45,7 @@ class TerminalApiServer {
       
       try {
         const { text, control } = req.body;
+        console.log('Received input request:', { text, control });
         
         // 处理普通文本输入
         if (text) {
@@ -53,8 +54,10 @@ class TerminalApiServer {
         
         // 处理控制字符, 例如 { "control": "c" } 将发送 Ctrl+C
         if (control) {
-          const controlCode = String.fromCharCode(control.charCodeAt(0) - 'a'.charCodeAt(0) + 1);
-          this.terminal.write(controlCode);
+          const controlChar = control.toLowerCase().charCodeAt(0);
+          const ctrlChar = String.fromCharCode(controlChar - 97 + 1); // 'a'是97，Ctrl+A是1
+          console.log(`Sending control character: ${control} (${ctrlChar.charCodeAt(0)})`);
+          this.terminal.write(ctrlChar);
         }
         
         res.json({ success: true });
@@ -68,15 +71,16 @@ class TerminalApiServer {
   // 设置终端实例，由main.js调用
   setTerminal(terminal) {
     this.terminal = terminal;
+    console.log('Terminal instance set for API server');
   }
   
   // 添加终端输出到缓冲区
   addOutput(data) {
     // 将输出按行分割并添加到缓冲区
-    const lines = data.split(/\r?\n/);
+    const lines = data.toString().split(/\r?\n/);
     
     for (const line of lines) {
-      if (line.trim() !== '') {
+      if (line.length > 0) {  // 允许空白行，但过滤掉空字符串
         this.outputBuffer.push(line);
         
         // 保持缓冲区大小限制
