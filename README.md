@@ -53,10 +53,48 @@ npm start
 ### 构建应用
 
 ```bash
+# 确保依赖配置正确
 npm run build
 ```
 
 构建成功后，可执行文件将位于`dist`目录中。
+
+### 依赖配置说明
+
+在 Electron 项目中，依赖项配置非常重要：
+
+1. `electron` 和 `electron-builder` 必须放在 `devDependencies` 中，不能放在 `dependencies` 中
+2. 添加以下脚本到 package.json 以确保本地依赖与 Electron 版本匹配：
+   ```json
+   "postinstall": "electron-builder install-app-deps"
+   ```
+
+正确的 package.json 配置示例：
+
+```json
+{
+  "name": "electron-terminal",
+  "version": "1.0.0",
+  "description": "Electron 终端模拟器",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "rebuild": "electron-rebuild",
+    "postinstall": "electron-builder install-app-deps",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-pty": "^0.10.1",
+    "xterm": "^5.0.0"
+  }
+}
+```
 
 ## 项目结构
 
@@ -73,7 +111,7 @@ electron-terminal/
 
 ## API文档
 
-应用启动后会在本地端口3000上提供RESTful API接口，可用于远程控制终端。
+应用启动后会在本地端口8999上提供RESTful API接口，可用于远程控制终端。
 
 ### 端点
 
@@ -125,22 +163,22 @@ POST /api/input
 
 ```bash
 # 发送命令
-curl -X POST -H "Content-Type: application/json" -d '{"text":"ls -la\n"}' http://localhost:3000/api/input
+curl -X POST -H "Content-Type: application/json" -d '{"text":"ls -la\n"}' http://localhost:8999/api/input
 
 # 获取最后5行纯文本输出
-curl "http://localhost:3000/api/output?lines=5&plain=true"
+curl "http://localhost:8999/api/output?lines=5&plain=true"
 ```
 
 #### 发送Ctrl+C终止命令
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"control":"c"}' http://localhost:3000/api/input
+curl -X POST -H "Content-Type: application/json" -d '{"control":"c"}' http://localhost:8999/api/input
 ```
 
 #### 发送超长文本
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段文本内容...\nEOF\n"}' http://localhost:3000/api/input
+curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段文本内容...\nEOF\n"}' http://localhost:8999/api/input
 ```
 
 ### Web演示客户端

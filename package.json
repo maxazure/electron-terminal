@@ -1,13 +1,14 @@
 {
-  "name": "electron-terminal",
+  "name": "termite",
   "version": "1.0.0",
-  "description": "A terminal emulator built with Electron",
+  "description": "Termite 提供了输入输出的 API 接口，默认使用 8999 端口，可与其他程序轻松对接，实现命令的远程调用与结果传递。通过该 API，你可以在不同系统或服务之间快速构建自动化工作流，让终端与更多应用无缝衔接，从而极大提升开发与运维效率。",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "rebuild": "npx electron-rebuild",
     "build": "electron-builder",
-    "postinstall": "npx electron-rebuild"
+    "build:py": "PYTHON=$(pwd)/python-env/bin/python electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
     "terminal",
@@ -20,21 +21,22 @@
   "dependencies": {
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
-    "electron": "^29.0.1",
-    "electron-builder": "^24.13.1",
     "express": "^4.21.2",
     "node-pty": "^0.10.1",
     "xterm": "^5.3.0",
     "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
+    "electron": "^29.0.1",
+    "electron-builder": "^24.13.1",
     "electron-rebuild": "^3.2.9"
   },
   "build": {
     "appId": "com.electron.terminal",
-    "productName": "Electron Terminal",
+    "productName": "Termite",
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.icns"
     }
   }
 }
