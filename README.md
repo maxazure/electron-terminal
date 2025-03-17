@@ -1,4 +1,4 @@
-# Electron Terminal
+# Termite
 
 一个使用Electron和node-pty构建的简洁终端模拟器。提供了类似iTerm2的基本终端功能，支持全彩色输出、命令历史和基本自定义。
 
@@ -185,7 +185,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段
 
 项目包含一个基于Web的演示客户端页面 `demo-client.html`，可以用来测试终端API功能。使用方法：
 
-1. 确保Electron Terminal应用正在运行
+1. 确保Termite应用正在运行
 2. 在浏览器中打开 `demo-client.html` 文件
 3. 通过Web界面发送命令和控制字符，并查看终端输出
 
