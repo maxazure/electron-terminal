@@ -76,12 +76,12 @@ async function testSendControl(control) {
   }
 }
 
-// 测试获取输出
+// 测试获取输出 - 不同行数测试
 async function testGetOutput(lines = null) {
   try {
     const path = lines ? `/api/output?lines=${lines}` : '/api/output';
     const response = await sendRequest('GET', path);
-    console.log('Get output response:', response);
+    console.log(`Get output (${lines || 'default'} lines) response:`, response);
     return response;
   } catch (error) {
     console.error('Get output failed:', error.message);
@@ -109,13 +109,16 @@ async function runTests() {
   // 等待终端处理命令
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // 获取终端输出
-  console.log('\n获取终端输出...');
-  const output = await testGetOutput();
-  if (!output) {
-    console.error('获取输出失败');
-    return;
-  }
+  // 测试获取不同行数的输出
+  console.log('\n测试不同参数获取终端输出...');
+  console.log('\n1. 默认行数（20行）:');
+  await testGetOutput();
+
+  console.log('\n2. 指定行数（5行）:');
+  await testGetOutput(5);
+
+  console.log('\n3. 无效行数（应返回默认20行）:');
+  await testGetOutput(0);
 
   // 测试发送超长命令
   console.log('\n发送超长文本...');

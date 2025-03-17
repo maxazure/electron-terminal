@@ -11,6 +11,7 @@ class TerminalApiServer {
     this.terminal = null;
     this.outputBuffer = [];
     this.maxBufferSize = 1000; // 最多保存1000行输出
+    this.defaultOutputLines = 20; // 默认返回的行数
     
     // 配置Express
     this.app.use(cors());
@@ -30,10 +31,18 @@ class TerminalApiServer {
     
     // 获取终端输出
     this.app.get('/api/output', (req, res) => {
-      const lines = parseInt(req.query.lines) || this.maxBufferSize;
+      // 解析请求参数，如果为空或者为0则使用默认行数
+      let lines = parseInt(req.query.lines);
+      if (isNaN(lines) || lines <= 0) {
+        lines = this.defaultOutputLines;
+      }
+      
+      // 获取最后N行数据
+      const outputLines = this.outputBuffer.slice(-lines);
+      
+      // 返回数组形式的输出，每个元素是一行
       res.json({ 
-        output: this.outputBuffer.slice(-lines).join('\n'),
-        lines: this.outputBuffer.slice(-lines)
+        lines: outputLines
       });
     });
     

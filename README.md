@@ -84,13 +84,14 @@ GET /api/output
 ```
 
 查询参数:
-- `lines`: (可选) 要获取的最大行数，默认为缓冲区大小(1000)
+- `lines`: (可选) 要获取的最大行数
+  - 如果未指定或者为0/负数，默认返回20行
+  - 例如: `/api/output?lines=5` 将返回最后5行
 
 响应:
 ```json
 {
-  "output": "完整的终端输出文本",
-  "lines": ["按行分割的输出数组"]
+  "lines": ["终端输出的第一行", "终端输出的第二行", "...更多行"]
 }
 ```
 
@@ -123,8 +124,8 @@ POST /api/input
 # 发送命令
 curl -X POST -H "Content-Type: application/json" -d '{"text":"ls -la\n"}' http://localhost:3000/api/input
 
-# 获取输出
-curl http://localhost:3000/api/output
+# 获取最后5行输出
+curl http://localhost:3000/api/output?lines=5
 ```
 
 #### 发送Ctrl+C终止命令
@@ -149,6 +150,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"text":"cat << EOF\n大段
 
 演示客户端提供以下功能：
 - 实时查看终端输出（支持自动刷新）
+- 自定义显示的行数
 - 发送命令，包括超长文本
 - 发送常用控制字符 (Ctrl+C, Ctrl+D等)
 - 查看命令执行状态

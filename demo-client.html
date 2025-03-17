@@ -110,6 +110,14 @@
     .auto-refresh input {
       width: auto;
     }
+    .lines-input {
+      width: 60px;
+      margin-right: 10px;
+    }
+    .lines-control {
+      display: flex;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -119,10 +127,14 @@
     <div class="panel">
       <h2>Terminal Output</h2>
       <div class="refresh-controls">
-        <button id="refresh-output">Refresh Output</button>
+        <div class="lines-control">
+          <label for="lines-input">行数:</label>
+          <input type="number" id="lines-input" class="lines-input" value="20" min="1">
+          <button id="refresh-output">刷新输出</button>
+        </div>
         <div class="auto-refresh">
           <input type="checkbox" id="auto-refresh" checked>
-          <label for="auto-refresh">Auto Refresh (2s)</label>
+          <label for="auto-refresh">自动刷新 (2秒)</label>
         </div>
       </div>
       <div id="terminal-output" class="terminal-output"></div>
@@ -133,13 +145,13 @@
       
       <div class="controls">
         <div class="input-group">
-          <label for="command-input">Enter Command:</label>
-          <textarea id="command-input" placeholder="Type your command here..."></textarea>
+          <label for="command-input">输入命令:</label>
+          <textarea id="command-input" placeholder="在此处输入命令..."></textarea>
         </div>
         
-        <button id="send-command">Send Command</button>
+        <button id="send-command">发送命令</button>
         
-        <h3>Common Control Characters</h3>
+        <h3>常用控制字符</h3>
         <div class="control-buttons">
           <button data-control="c">Ctrl+C</button>
           <button data-control="d">Ctrl+D</button>
@@ -165,6 +177,7 @@
     const commandInput = document.getElementById('command-input');
     const sendCommandBtn = document.getElementById('send-command');
     const refreshOutputBtn = document.getElementById('refresh-output');
+    const linesInput = document.getElementById('lines-input');
     const autoRefreshCheckbox = document.getElementById('auto-refresh');
     const controlButtons = document.querySelectorAll('.control-buttons button');
     const statusEl = document.getElementById('status');
@@ -172,17 +185,22 @@
     // 获取终端输出
     async function fetchTerminalOutput() {
       try {
-        const response = await fetch(`${API_BASE_URL}/output`);
+        // 从输入框获取行数
+        const lines = parseInt(linesInput.value) || 20;
+        
+        // 将行数作为参数传递给API
+        const response = await fetch(`${API_BASE_URL}/output?lines=${lines}`);
         const data = await response.json();
         
-        if (data && data.output) {
-          terminalOutput.textContent = data.output;
+        if (data && data.lines) {
+          // 显示数组中的每一行
+          terminalOutput.textContent = data.lines.join('\n');
           // 自动滚动到底部
           terminalOutput.scrollTop = terminalOutput.scrollHeight;
         }
       } catch (error) {
         console.error('Error fetching output:', error);
-        showStatus('Error fetching terminal output', false);
+        showStatus('获取终端输出时出错', false);
       }
     }
     
@@ -201,16 +219,16 @@
         
         const data = await response.json();
         if (data.success) {
-          showStatus('Command sent successfully', true);
+          showStatus('命令发送成功', true);
           commandInput.value = '';
           // 立即刷新输出
           setTimeout(fetchTerminalOutput, 500);
         } else {
-          showStatus('Failed to send command', false);
+          showStatus('命令发送失败', false);
         }
       } catch (error) {
         console.error('Error sending command:', error);
-        showStatus('Error sending command', false);
+        showStatus('发送命令时出错', false);
       }
     }
     
@@ -227,15 +245,15 @@
         
         const data = await response.json();
         if (data.success) {
-          showStatus(`Sent Ctrl+${char.toUpperCase()} successfully`, true);
+          showStatus(`成功发送 Ctrl+${char.toUpperCase()}`, true);
           // 立即刷新输出
           setTimeout(fetchTerminalOutput, 500);
         } else {
-          showStatus('Failed to send control character', false);
+          showStatus('发送控制字符失败', false);
         }
       } catch (error) {
         console.error('Error sending control character:', error);
-        showStatus('Error sending control character', false);
+        showStatus('发送控制字符时出错', false);
       }
     }
     
@@ -271,6 +289,9 @@
     });
     
     refreshOutputBtn.addEventListener('click', fetchTerminalOutput);
+    
+    // 监听行数输入框变化
+    linesInput.addEventListener('change', fetchTerminalOutput);
     
     autoRefreshCheckbox.addEventListener('change', setupAutoRefresh);
     
