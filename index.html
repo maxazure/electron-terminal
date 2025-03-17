@@ -52,8 +52,8 @@
   <script>
     // 使用CommonJS require
     const { ipcRenderer } = require('electron');
-    const Terminal = require('xterm').Terminal;
-    const FitAddon = require('xterm/lib/addons/fit/fit');
+    const { Terminal } = require('xterm');
+    const { FitAddon } = require('xterm-addon-fit');
 
     // 初始化xterm.js
     const term = new Terminal({
@@ -70,24 +70,27 @@
     // 在DOM容器中创建终端
     term.open(document.getElementById('terminal-container'));
 
-    // 尝试添加FitAddon（如果存在的话）
-    let fitAddon;
+    // 添加FitAddon
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+
+    // 尝试适应容器大小
     try {
-      fitAddon = new FitAddon.FitAddon();
-      term.loadAddon(fitAddon);
       fitAddon.fit();
     } catch(err) {
-      console.warn('FitAddon not available:', err);
+      console.warn('FitAddon error:', err);
     }
 
     // 监听窗口大小变化，调整终端大小
     window.addEventListener('resize', () => {
-      if (fitAddon) {
+      try {
         fitAddon.fit();
         
         // 获取新的大小并发送到main进程
         const dimensions = term.size;
         ipcRenderer.send('resize-terminal', dimensions);
+      } catch(e) {
+        console.error('Error resizing terminal:', e);
       }
     });
 
@@ -112,10 +115,12 @@
     });
 
     // 获取初始大小
-    if (fitAddon) {
+    try {
       fitAddon.fit();
       const dimensions = term.size;
       ipcRenderer.send('resize-terminal', dimensions);
+    } catch(e) {
+      console.error('Error getting initial terminal size:', e);
     }
   </script>
 </body>
