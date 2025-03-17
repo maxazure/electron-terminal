@@ -74,9 +74,23 @@
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
+    // 发送终端尺寸到主进程的辅助函数
+    function sendTerminalSize() {
+      try {
+        const dimensions = term.size;
+        // 确保dimensions存在且包含有效的cols和rows属性
+        if (dimensions && typeof dimensions.cols === 'number' && typeof dimensions.rows === 'number') {
+          ipcRenderer.send('resize-terminal', dimensions);
+        }
+      } catch (e) {
+        console.error('Error sending terminal size:', e);
+      }
+    }
+
     // 尝试适应容器大小
     try {
       fitAddon.fit();
+      sendTerminalSize();
     } catch(err) {
       console.warn('FitAddon error:', err);
     }
@@ -85,10 +99,7 @@
     window.addEventListener('resize', () => {
       try {
         fitAddon.fit();
-        
-        // 获取新的大小并发送到main进程
-        const dimensions = term.size;
-        ipcRenderer.send('resize-terminal', dimensions);
+        sendTerminalSize();
       } catch(e) {
         console.error('Error resizing terminal:', e);
       }
@@ -113,15 +124,6 @@
     document.getElementById('new-tab').addEventListener('click', () => {
       term.writeln('\r\n标签功能将在未来版本中实现!\r\n');
     });
-
-    // 获取初始大小
-    try {
-      fitAddon.fit();
-      const dimensions = term.size;
-      ipcRenderer.send('resize-terminal', dimensions);
-    } catch(e) {
-      console.error('Error getting initial terminal size:', e);
-    }
   </script>
 </body>
 </html>

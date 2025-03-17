@@ -77,7 +77,8 @@ ipcMain.on('terminal-input', (event, data) => {
 
 // 接收终端调整大小事件并调整pty大小
 ipcMain.on('resize-terminal', (event, size) => {
-  if (ptyProcess) {
+  // 添加对size对象的检查，确保其存在并且包含必要的属性
+  if (ptyProcess && size && typeof size.cols === 'number' && typeof size.rows === 'number') {
     ptyProcess.resize(size.cols, size.rows);
   }
 });
