@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Electron Terminal</title>
+  <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #2e2e2e;
+      display: flex;
+      flex-direction: column;
+    }
+    #terminal-container {
+      flex: 1;
+      padding: 5px;
+    }
+    .terminal {
+      font-family: 'Menlo', monospace;
+      font-size: 14px;
+      font-feature-settings: "liga" 0;
+    }
+    .toolbar {
+      display: flex;
+      background-color: #1e1e1e;
+      padding: 5px;
+      color: #f0f0f0;
+    }
+    .toolbar button {
+      margin-right: 10px;
+      background-color: #3e3e3e;
+      border: none;
+      color: #f0f0f0;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .toolbar button:hover {
+      background-color: #4e4e4e;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="new-tab">New Tab</button>
+    <button id="clear-terminal">Clear</button>
+  </div>
+  <div id="terminal-container"></div>
+
+  <script>
+    // 使用CommonJS require
+    const { ipcRenderer } = require('electron');
+    const Terminal = require('xterm').Terminal;
+    const FitAddon = require('xterm/lib/addons/fit/fit');
+
+    // 初始化xterm.js
+    const term = new Terminal({
+      cursorBlink: true,
+      cursorStyle: 'block',
+      fontFamily: 'Menlo, monospace',
+      fontSize: 14,
+      theme: {
+        background: '#2e2e2e',
+        foreground: '#f0f0f0',
+      }
+    });
+
+    // 在DOM容器中创建终端
+    term.open(document.getElementById('terminal-container'));
+
+    // 尝试添加FitAddon（如果存在的话）
+    let fitAddon;
+    try {
+      fitAddon = new FitAddon.FitAddon();
+      term.loadAddon(fitAddon);
+      fitAddon.fit();
+    } catch(err) {
+      console.warn('FitAddon not available:', err);
+    }
+
+    // 监听窗口大小变化，调整终端大小
+    window.addEventListener('resize', () => {
+      if (fitAddon) {
+        fitAddon.fit();
+        
+        // 获取新的大小并发送到main进程
+        const dimensions = term.size;
+        ipcRenderer.send('resize-terminal', dimensions);
+      }
+    });
+
+    // 从主进程接收终端输出并写入xterm
+    ipcRenderer.on('terminal-output', (event, data) => {
+      term.write(data);
+    });
+
+    // 从xterm发送用户输入到主进程
+    term.onData(data => {
+      ipcRenderer.send('terminal-input', data);
+    });
+
+    // 添加清除按钮功能
+    document.getElementById('clear-terminal').addEventListener('click', () => {
+      term.clear();
+    });
+
+    // 新标签按钮暂时只显示提示信息
+    document.getElementById('new-tab').addEventListener('click', () => {
+      term.writeln('\r\n标签功能将在未来版本中实现!\r\n');
+    });
+
+    // 获取初始大小
+    if (fitAddon) {
+      fitAddon.fit();
+      const dimensions = term.size;
+      ipcRenderer.send('resize-terminal', dimensions);
+    }
+  </script>
+</body>
+</html>
